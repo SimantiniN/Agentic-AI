@@ -3,6 +3,8 @@ import certifi
 from dotenv import load_dotenv
 import streamlit as st
 import json
+import re
+
 
 # ---- Load Environment Variables ----
 load_dotenv()
@@ -80,7 +82,8 @@ else:
 st.write("Ask questions about Shivaji Maharaj from the uploaded PDF.")
 
 query = st.text_input("Enter your question:")
-lang_choice = st.selectbox("Show answer in:", ["English", "Marathi", "Hindi"])
+lang_choice = st.selectbox("Show answer in:",["English","Marathi", "Hindi", "Spanish", "French", "German", "Japanese", "Chinese", "Tamil", "Telugu", "Kannada", "Gujarati", "Bengali", "Punjabi", "Arabic", "Russian"])
+
 
 if query:
     # ---- Retrieve relevant docs ----
@@ -96,11 +99,26 @@ if query:
     raw_output = llm_chain.run(**prompt_vars)
 
     # ---- Parse JSON safely ----
-    try:
-        result_json = json.loads(raw_output)
-        english_answer = result_json.get("english_answer", "Not found")
-        translated_answer = result_json.get(f"{lang_choice}_answer", "Not found")
-    except json.JSONDecodeError:
+    # try:
+    #     result_json = json.loads(raw_output)
+    #     english_answer = result_json.get("english_answer", "Not found")
+    #     translated_answer = result_json.get(f"{lang_choice}_answer", "Not found")
+    # except json.JSONDecodeError:
+    #     english_answer = raw_output
+    #     translated_answer = "Translation not detected"
+
+
+# ---- Safely parse JSON from LLM output ----
+    match = re.search(r'\{.*\}', raw_output, re.DOTALL)
+    if match:
+        try:
+            result_json = json.loads(match.group())
+            english_answer = result_json.get("english_answer", "Not found")
+            translated_answer = result_json.get(f"{lang_choice}_answer", "Not found")
+        except json.JSONDecodeError:
+            english_answer = raw_output
+            translated_answer = "Translation not detected"
+    else:
         english_answer = raw_output
         translated_answer = "Translation not detected"
 
@@ -108,7 +126,7 @@ if query:
     if lang_choice == "English":
         st.subheader("Answer (English):")
         st.markdown(f"<p style='color:blue; font-size:20px;'>{english_answer}</p>", unsafe_allow_html=True)
-    else:
+    else :
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("English Answer:")
